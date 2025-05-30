@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en"> <head>
+<html lang="en">
+<head>
   <meta charset="utf-8">
   <title>A-Frame AR Ground Rectangle</title>
   <meta name="description" content="A-Frame AR example with a rectangle anchored to the ground.">
@@ -58,19 +59,21 @@
   <a-scene
     webxr="optionalFeatures: hit-test, dom-overlay, local-floor; overlayElement: #ar-overlay;"
     renderer="colorManagement: true; physicallyCorrectLights: true;"
-    xr-mode-ui="enterARButton: #enterARButton; enabled: true;" /* Corrected 'anabled' to 'enabled' */
+    xr-mode-ui="enterARButton: #enterARButton; enabled: true;"
     background="color: #ECEFF1" /* Fallback background color */
   >
     <a-assets>
       </a-assets>
 
-    <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera> <a-light type="ambient" color="#BBB"></a-light>
+    <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
+
+    <a-light type="ambient" color="#BBB"></a-light>
     <a-light type="directional" color="#FFF" intensity="0.8" position="-0.5 1 1"></a-light>
 
     <a-entity
       id="reticle"
-      ar-hit-test="type: plane; planeOrientation: horizontal; targetEl: self"
-      visible="false" /* Starts invisible, ar-hit-test makes it visible on hit */
+      ar-hit-test="enabled: false; type: plane; planeOrientation: horizontal; targetEl: self" /* Start with enabled: false */
+      visible="false"
     >
       <a-ring
         color="teal"
@@ -84,10 +87,10 @@
     <a-plane
       id="ground-plane"
       material="color: mediumseagreen; shader: flat; transparent: true; opacity: 0.75;"
-      width="0.8" /* Size of the rectangle */
+      width="0.8"
       height="0.8"
-      rotation="-90 0 0" /* Orient it to lie flat */
-      position="0 -100 0" /* Initially hidden far away */
+      rotation="-90 0 0"
+      position="0 -100 0"
       visible="false"
     ></a-plane>
 
@@ -101,56 +104,83 @@
       const groundPlaneEl = document.getElementById('ground-plane');
       let planePlaced = false;
 
-      // Function to run once the A-Frame scene is loaded
       function initializeARExperience() {
-        console.log('Initializing AR Experience...'); // Debug log
+        console.log('Initializing AR Experience...');
 
-        // Handle entering AR mode
         sceneEl.addEventListener('enter-vr', () => {
-          console.log('Attempting to enter VR/AR mode.'); // Debug log
+          console.log('Attempting to enter VR/AR mode.');
           if (sceneEl.is('ar-mode')) {
-            console.log('Successfully entered AR mode.'); // Debug log
+            console.log('Successfully entered AR mode.');
             arStatusEl.style.display = 'block';
             arStatusEl.textContent = 'Scanning for surfaces... Point your camera around.';
-            // Reticle visibility is handled by its ar-hit-test component
-          } else {
-            console.log('Entered VR mode, not AR mode, or mode detection failed.'); // Debug log
-             arStatusEl.textContent = 'Entered VR mode. AR mode may not be supported or enabled.';
-             arStatusEl.style.display = 'block';
-          }
-        });
-
-        // Handle exiting AR mode
-        sceneEl.addEventListener('exit-vr', () => {
-          console.log('Exited VR/AR mode.'); // Debug log
-          arStatusEl.style.display = 'none';
-          groundPlaneEl.setAttribute('visible', 'false'); // Hide plane
-          groundPlaneEl.setAttribute('position', '0 -100 0'); // Move it away
-          planePlaced = false; // Allow placing again if re-entering AR
-          if (reticleEl) reticleEl.setAttribute('visible', 'false'); // Ensure reticle is hidden
-        });
-
-        // Listen for when the reticle finds a surface
-        reticleEl.addEventListener('ar-hit-test-achieved', (event) => {
-          console.log('AR Hit Test Achieved (surface found).', event.detail); // Debug log
-          arStatusEl.textContent = 'Surface detected! Reticle active.';
-          if (!planePlaced) {
-            const reticlePosition = reticleEl.object3D.position;
-            const reticleQuaternion = reticleEl.object3D.quaternion;
-
-            groundPlaneEl.object3D.position.copy(reticlePosition);
-            groundPlaneEl.object3D.quaternion.copy(reticleQuaternion);
             
-            groundPlaneEl.setAttribute('visible', 'true');
-            planePlaced = true;
-            arStatusEl.textContent = 'Rectangle anchored to the ground!';
-            console.log('Ground plane placed at:', reticlePosition); // Debug log
+            // Enable ar-hit-test on the reticle now that AR session is active
+            if (reticleEl) {
+              console.log('Enabling ar-hit-test on reticle.');
+              reticleEl.setAttribute('ar-hit-test', 'enabled', true);
+              // Reticle visibility will be handled by ar-hit-test component itself
+              // when it achieves a hit, because targetEl is 'self'.
+            }
+          } else {
+            console.log('Entered VR mode, not AR mode, or mode detection failed.');
+            arStatusEl.textContent = 'Entered VR mode. AR mode may not be supported or enabled.';
+            arStatusEl.style.display = 'block';
           }
         });
 
-        // Listen for when the reticle loses a surface
+        sceneEl.addEventListener('exit-vr', () => {
+          console.log('Exited VR/AR mode.');
+          arStatusEl.style.display = 'none';
+          groundPlaneEl.setAttribute('visible', 'false');
+          groundPlaneEl.setAttribute('position', '0 -100 0');
+          planePlaced = false;
+          if (reticleEl) {
+            console.log('Disabling ar-hit-test and hiding reticle.');
+            reticleEl.setAttribute('ar-hit-test', 'enabled', false);
+            reticleEl.setAttribute('visible', 'false'); // Explicitly hide reticle on exit
+          }
+        });
+
+        reticleEl.addEventListener('ar-hit-test-achieved', (event) => {
+          console.log('AR Hit Test Achieved (surface found).');
+          // Reticle is made visible by the ar-hit-test component when targetEl: self
+          arStatusEl.textContent = 'Surface detected! Tap to place rectangle.'; // Changed message slightly
+
+          // For this example, we'll place the plane on tap, not automatically.
+          // If you want to place it automatically, uncomment the placement logic here.
+          // For tap-to-place, we'll add a click listener to the scene.
+        });
+        
+        // Tap to place logic
+        sceneEl.addEventListener('click', (event) => {
+            // Check if we are in AR mode and if the reticle is visible (meaning a surface is found)
+            if (sceneEl.is('ar-mode') && reticleEl && reticleEl.getAttribute('visible')) {
+                if (!planePlaced) {
+                    console.log('Scene clicked, placing ground plane.');
+                    const reticlePosition = reticleEl.object3D.position;
+                    const reticleQuaternion = reticleEl.object3D.quaternion;
+
+                    groundPlaneEl.object3D.position.copy(reticlePosition);
+                    groundPlaneEl.object3D.quaternion.copy(reticleQuaternion);
+                    
+                    groundPlaneEl.setAttribute('visible', 'true');
+                    planePlaced = true;
+                    arStatusEl.textContent = 'Rectangle anchored to the ground!';
+                    console.log('Ground plane placed at:', reticlePosition);
+
+                    // Optionally hide reticle after placement
+                    // reticleEl.setAttribute('visible', 'false');
+                    // reticleEl.setAttribute('ar-hit-test', 'enabled', false');
+                } else {
+                    console.log('Scene clicked, but plane already placed.');
+                }
+            }
+        });
+
+
         reticleEl.addEventListener('ar-hit-test-lost', () => {
-          console.log('AR Hit Test Lost (surface lost).'); // Debug log
+          console.log('AR Hit Test Lost (surface lost).');
+          // Reticle is made invisible by ar-hit-test component
           if (!planePlaced) {
             arStatusEl.textContent = 'No surface detected. Point camera at a surface.';
           } else {
@@ -158,13 +188,11 @@
           }
         });
         
-        // Initial message before entering AR
         arStatusEl.style.display = 'block';
         arStatusEl.textContent = 'Click "Enter AR" and point your camera at a flat surface.';
-        console.log('AR UI Initialized. Waiting for user to click Enter AR.'); // Debug log
+        console.log('AR UI Initialized. Waiting for user to click Enter AR.');
       }
 
-      // Wait for the A-Frame scene to load before setting up AR events
       if (sceneEl.hasLoaded) {
         initializeARExperience();
       } else {
