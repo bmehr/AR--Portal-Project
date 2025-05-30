@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html>
-<head>
+<html lang="en"> <head>
   <meta charset="utf-8">
   <title>A-Frame AR Ground Rectangle</title>
   <meta name="description" content="A-Frame AR example with a rectangle anchored to the ground.">
@@ -8,6 +7,7 @@
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
     /* Basic styling for the AR overlay elements */
+    body { margin: 0; overflow: hidden; } /* Ensure no scrollbars interfere with AR */
     #ar-overlay {
       position: fixed;
       top: 0;
@@ -57,17 +57,14 @@
 
   <a-scene
     webxr="optionalFeatures: hit-test, dom-overlay, local-floor; overlayElement: #ar-overlay;"
-    ar-modes="webxr" /* Primarily use WebXR */
     renderer="colorManagement: true; physicallyCorrectLights: true;"
-    xr-mode-ui="enterARButton: #enterARButton; anabled: true;" /* Link button to AR mode entry */
+    xr-mode-ui="enterARButton: #enterARButton; enabled: true;" /* Corrected 'anabled' to 'enabled' */
     background="color: #ECEFF1" /* Fallback background color */
   >
     <a-assets>
       </a-assets>
 
-    <a-camera position="0 1.6 0" look-controls="enabled: false" ar-camera=""></a-camera>
-
-    <a-light type="ambient" color="#BBB"></a-light>
+    <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera> <a-light type="ambient" color="#BBB"></a-light>
     <a-light type="directional" color="#FFF" intensity="0.8" position="-0.5 1 1"></a-light>
 
     <a-entity
@@ -106,17 +103,26 @@
 
       // Function to run once the A-Frame scene is loaded
       function initializeARExperience() {
+        console.log('Initializing AR Experience...'); // Debug log
+
         // Handle entering AR mode
         sceneEl.addEventListener('enter-vr', () => {
+          console.log('Attempting to enter VR/AR mode.'); // Debug log
           if (sceneEl.is('ar-mode')) {
+            console.log('Successfully entered AR mode.'); // Debug log
             arStatusEl.style.display = 'block';
             arStatusEl.textContent = 'Scanning for surfaces... Point your camera around.';
             // Reticle visibility is handled by its ar-hit-test component
+          } else {
+            console.log('Entered VR mode, not AR mode, or mode detection failed.'); // Debug log
+             arStatusEl.textContent = 'Entered VR mode. AR mode may not be supported or enabled.';
+             arStatusEl.style.display = 'block';
           }
         });
 
         // Handle exiting AR mode
         sceneEl.addEventListener('exit-vr', () => {
+          console.log('Exited VR/AR mode.'); // Debug log
           arStatusEl.style.display = 'none';
           groundPlaneEl.setAttribute('visible', 'false'); // Hide plane
           groundPlaneEl.setAttribute('position', '0 -100 0'); // Move it away
@@ -126,44 +132,36 @@
 
         // Listen for when the reticle finds a surface
         reticleEl.addEventListener('ar-hit-test-achieved', (event) => {
+          console.log('AR Hit Test Achieved (surface found).', event.detail); // Debug log
           arStatusEl.textContent = 'Surface detected! Reticle active.';
-          // The reticleEl is automatically made visible by ar-hit-test.
-          // Now, if the main plane hasn't been placed, place it.
           if (!planePlaced) {
-            // Get position and rotation from the reticle (which is on the detected surface)
             const reticlePosition = reticleEl.object3D.position;
             const reticleQuaternion = reticleEl.object3D.quaternion;
 
-            // Apply this transform to our ground-plane
             groundPlaneEl.object3D.position.copy(reticlePosition);
             groundPlaneEl.object3D.quaternion.copy(reticleQuaternion);
             
-            // Make the ground plane visible
             groundPlaneEl.setAttribute('visible', 'true');
             planePlaced = true;
             arStatusEl.textContent = 'Rectangle anchored to the ground!';
-
-            // Optionally, hide the reticle once the main object is placed
-            // reticleEl.setAttribute('visible', 'false');
-            // Or keep reticle visible for further interactions if desired.
-            // For this example, let's keep it to show where the surface is.
+            console.log('Ground plane placed at:', reticlePosition); // Debug log
           }
         });
 
         // Listen for when the reticle loses a surface
         reticleEl.addEventListener('ar-hit-test-lost', () => {
-          // ReticleEl is automatically made invisible by ar-hit-test.
-          if (!planePlaced) { // Only update status if plane not yet placed
+          console.log('AR Hit Test Lost (surface lost).'); // Debug log
+          if (!planePlaced) {
             arStatusEl.textContent = 'No surface detected. Point camera at a surface.';
           } else {
-            // If plane is already placed, it remains. Reticle just indicates current tracking.
             arStatusEl.textContent = 'Rectangle anchored. Reticle lost surface focus.';
           }
         });
-
+        
         // Initial message before entering AR
         arStatusEl.style.display = 'block';
         arStatusEl.textContent = 'Click "Enter AR" and point your camera at a flat surface.';
+        console.log('AR UI Initialized. Waiting for user to click Enter AR.'); // Debug log
       }
 
       // Wait for the A-Frame scene to load before setting up AR events
