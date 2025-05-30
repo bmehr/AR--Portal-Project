@@ -6,7 +6,7 @@
   <meta name="description" content="Step through dimensions with AR">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ar.js/2.2.2/aframe-ar.js"></script>
   <style>
     body {
       margin: 0;
@@ -169,7 +169,7 @@
 
   <a-scene
     embedded
-    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best; sourceWidth:1280; sourceHeight:960; displayWidth: 1280; displayHeight: 960;"
     vr-mode-ui="enabled: false"
     renderer="logarithmicDepthBuffer: true; antialias: false; colorManagement: true;"
     device-orientation-permission-ui="enabled: false"
@@ -329,20 +329,15 @@
   </a-scene>
 
   <script>
-    // Wait for A-Frame to load before registering components
-    document.addEventListener('DOMContentLoaded', function() {
-      // Ensure A-Frame is loaded
-      if (typeof AFRAME === 'undefined') {
-        console.error('A-Frame not loaded');
-        return;
-      }
-      
-      console.log('Initializing Portal System...');
+    // Function to initialize everything once A-Frame is ready
+    function initializePortalSystem() {
+      console.log('A-Frame loaded successfully, initializing Portal System...');
       
       // Portal System Component
       AFRAME.registerComponent('portal-system', {
         init: function() {
           console.log('Portal system component initialized');
+          window.portalSystemInitialized = true;
           this.portalActive = false;
           this.portalPlaced = false;
           this.energyLevel = 0;
@@ -369,6 +364,14 @@
         
         startInitialization: function() {
           console.log('Starting initialization sequence');
+          
+          // Show energy indicator immediately for debugging
+          setTimeout(() => {
+            console.log('Force showing energy indicator');
+            this.energyIndicator.classList.add('show');
+            this.portalControls.classList.add('show');
+          }, 500);
+          
           let step = 0;
           const steps = [
             "Calibrating dimensional resonance...",
@@ -588,7 +591,39 @@
         portalSystem.showStatusMessage("Portal system reset!", 2000);
       }
       
-    }); // End DOMContentLoaded
+    } // End initializePortalSystem
+    
+    // Wait for A-Frame to be fully loaded
+    if (typeof AFRAME !== 'undefined') {
+      // A-Frame is already loaded
+      initializePortalSystem();
+    } else {
+      // Wait for A-Frame to load
+      let checkAFrame = setInterval(() => {
+        if (typeof AFRAME !== 'undefined') {
+          clearInterval(checkAFrame);
+          initializePortalSystem();
+        } else {
+          console.log('Waiting for A-Frame to load...');
+        }
+      }, 100);
+      
+      // Fallback: if A-Frame doesn't load within 10 seconds, show error
+      setTimeout(() => {
+        if (typeof AFRAME === 'undefined') {
+          clearInterval(checkAFrame);
+          console.error('A-Frame failed to load within 10 seconds');
+          document.getElementById('statusText').textContent = 'Error: A-Frame failed to load. Please refresh the page.';
+        }
+      }, 10000);
+    }
+    
+    // Also listen for DOMContentLoaded as a backup
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof AFRAME !== 'undefined' && !window.portalSystemInitialized) {
+        initializePortalSystem();
+      }
+    });
   </script>
 </body>
 </html>
