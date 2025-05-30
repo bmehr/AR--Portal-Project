@@ -39,6 +39,7 @@
       backdrop-filter: blur(10px);
       box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
       pointer-events: auto;
+      transition: opacity 0.5s ease;
     }
     
     .status-title {
@@ -62,6 +63,14 @@
       display: flex;
       gap: 15px;
       pointer-events: auto;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.5s ease;
+    }
+    
+    .portal-controls.show {
+      opacity: 1;
+      visibility: visible;
     }
     
     .control-btn {
@@ -85,7 +94,8 @@
     }
     
     .hidden {
-      display: none;
+      opacity: 0;
+      visibility: hidden;
     }
     
     #arjsDebugUIContainer {
@@ -99,11 +109,20 @@
       transform: translateY(-50%);
       width: 60px;
       height: 200px;
-      background: linear-gradient(to top, #000, #00ffff);
+      background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,255,255,0.2));
       border: 2px solid #00ffff;
       border-radius: 30px;
       overflow: hidden;
       pointer-events: auto;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.5s ease;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+    }
+    
+    .energy-indicator.show {
+      opacity: 1;
+      visibility: visible;
     }
     
     .energy-level {
@@ -114,6 +133,18 @@
       border-radius: 26px;
       transition: height 0.5s ease;
       box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+      height: 0%;
+    }
+    
+    .energy-label {
+      position: absolute;
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #00ffff;
+      font-size: 12px;
+      text-align: center;
+      text-shadow: 0 0 5px #00ffff;
     }
   </style>
 </head>
@@ -124,14 +155,15 @@
       <div class="status-text" id="statusText">Initializing quantum field generators...</div>
     </div>
     
-    <div class="portal-controls hidden" id="portalControls">
+    <div class="portal-controls" id="portalControls">
       <button class="control-btn" onclick="summonPortal()">🌟 Summon Portal</button>
       <button class="control-btn" onclick="togglePortalPower()">⚡ Toggle Power</button>
       <button class="control-btn" onclick="resetPortal()">🔄 Reset</button>
     </div>
     
-    <div class="energy-indicator hidden" id="energyIndicator">
-      <div class="energy-level" id="energyLevel" style="height: 0%;"></div>
+    <div class="energy-indicator" id="energyIndicator">
+      <div class="energy-level" id="energyLevel"></div>
+      <div class="energy-label">ENERGY</div>
     </div>
   </div>
 
@@ -305,235 +337,257 @@
         return;
       }
       
+      console.log('Initializing Portal System...');
+      
       // Portal System Component
       AFRAME.registerComponent('portal-system', {
-      init: function() {
-        this.portalActive = false;
-        this.portalPlaced = false;
-        this.energyLevel = 0;
-        this.maxEnergy = 100;
-        
-        // UI Elements
-        this.statusPanel = document.getElementById('statusPanel');
-        this.statusText = document.getElementById('statusText');
-        this.portalControls = document.getElementById('portalControls');
-        this.energyIndicator = document.getElementById('energyIndicator');
-        this.energyLevelBar = document.getElementById('energyLevel');
-        
-        // Portal Elements
-        this.portalGroup = document.getElementById('portalGroup');
-        this.camera = document.getElementById('arCamera');
-        
-        this.setupEventListeners();
-        this.startInitialization();
-      },
-      
-      startInitialization: function() {
-        let step = 0;
-        const steps = [
-          "Calibrating dimensional resonance...",
-          "Charging quantum field generators...",
-          "Establishing AR tracking matrix...",
-          "Portal system ready for deployment!"
-        ];
-        
-        const initInterval = setInterval(() => {
-          this.statusText.textContent = steps[step];
-          step++;
+        init: function() {
+          console.log('Portal system component initialized');
+          this.portalActive = false;
+          this.portalPlaced = false;
+          this.energyLevel = 0;
+          this.maxEnergy = 100;
           
-          if (step >= steps.length) {
-            clearInterval(initInterval);
-            setTimeout(() => {
-              this.statusPanel.classList.add('hidden');
-              this.portalControls.classList.remove('hidden');
-              this.energyIndicator.classList.remove('hidden');
-              this.startEnergyCharging();
-            }, 1500);
-          }
-        }, 1000);
-      },
-      
-      startEnergyCharging: function() {
-        const chargeInterval = setInterval(() => {
-          if (this.energyLevel < this.maxEnergy) {
-            this.energyLevel += 2;
-            this.updateEnergyDisplay();
+          // UI Elements
+          this.statusPanel = document.getElementById('statusPanel');
+          this.statusText = document.getElementById('statusText');
+          this.portalControls = document.getElementById('portalControls');
+          this.energyIndicator = document.getElementById('energyIndicator');
+          this.energyLevelBar = document.getElementById('energyLevel');
+          
+          // Portal Elements
+          this.portalGroup = document.getElementById('portalGroup');
+          this.camera = document.getElementById('arCamera');
+          
+          // Debug: Check if elements exist
+          console.log('Energy indicator found:', !!this.energyIndicator);
+          console.log('Energy level bar found:', !!this.energyLevelBar);
+          
+          this.setupEventListeners();
+          this.startInitialization();
+        },
+        
+        startInitialization: function() {
+          console.log('Starting initialization sequence');
+          let step = 0;
+          const steps = [
+            "Calibrating dimensional resonance...",
+            "Charging quantum field generators...",
+            "Establishing AR tracking matrix...",
+            "Portal system ready for deployment!"
+          ];
+          
+          const initInterval = setInterval(() => {
+            this.statusText.textContent = steps[step];
+            console.log('Init step:', steps[step]);
+            step++;
+            
+            if (step >= steps.length) {
+              clearInterval(initInterval);
+              setTimeout(() => {
+                console.log('Initialization complete, showing UI elements');
+                this.statusPanel.classList.add('hidden');
+                this.portalControls.classList.add('show');
+                this.energyIndicator.classList.add('show');
+                this.startEnergyCharging();
+              }, 1500);
+            }
+          }, 1000);
+        },
+        
+        startEnergyCharging: function() {
+          console.log('Starting energy charging');
+          const chargeInterval = setInterval(() => {
+            if (this.energyLevel < this.maxEnergy) {
+              this.energyLevel += 2;
+              this.updateEnergyDisplay();
+              
+              // Debug log every 10% charged
+              if (this.energyLevel % 10 === 0) {
+                console.log('Energy level:', this.energyLevel + '%');
+              }
+            } else {
+              console.log('Energy fully charged!');
+              clearInterval(chargeInterval);
+            }
+          }, 100);
+        },
+        
+        updateEnergyDisplay: function() {
+          const percentage = (this.energyLevel / this.maxEnergy) * 100;
+          if (this.energyLevelBar) {
+            this.energyLevelBar.style.height = percentage + '%';
+            console.log('Updated energy bar height to:', percentage + '%');
           } else {
-            clearInterval(chargeInterval);
+            console.error('Energy level bar element not found');
           }
-        }, 100);
-      },
-      
-      updateEnergyDisplay: function() {
-        const percentage = (this.energyLevel / this.maxEnergy) * 100;
-        this.energyLevelBar.style.height = percentage + '%';
-      },
-      
-      setupEventListeners: function() {
-        // Touch gesture handling
-        this.el.addEventListener('click', (event) => {
-          if (!this.portalPlaced && this.energyLevel >= 50) {
-            this.placePortal(event);
-          }
-        });
-      },
-      
-      placePortal: function(event) {
-        const camera = this.camera;
-        const cameraPos = camera.getAttribute('position');
-        const cameraRot = camera.getAttribute('rotation');
+        },
         
-        // Calculate position in front of camera
-        const distance = 4;
-        const radians = (cameraRot.y * Math.PI) / 180;
-        
-        const portalPos = {
-          x: cameraPos.x + Math.sin(radians) * distance,
-          y: cameraPos.y + 0.5,
-          z: cameraPos.z - Math.cos(radians) * distance
-        };
-        
-        // Place and activate portal
-        this.portalGroup.setAttribute('position', `${portalPos.x} ${portalPos.y} ${portalPos.z}`);
-        this.portalGroup.setAttribute('rotation', `0 ${cameraRot.y} 0`);
-        this.portalGroup.setAttribute('visible', true);
-        
-        this.portalPlaced = true;
-        this.portalActive = true;
-        
-        // Show success message
-        this.showStatusMessage("Portal successfully materialized!", 3000);
-      },
-      
-      showStatusMessage: function(message, duration) {
-        this.statusText.textContent = message;
-        this.statusPanel.classList.remove('hidden');
-        
-        setTimeout(() => {
-          this.statusPanel.classList.add('hidden');
-        }, duration);
-      }
-    });
-    
-    // Portal Effects Component
-    AFRAME.registerComponent('portal-effects', {
-      init: function() {
-        this.proximityThreshold = 5;
-        this.camera = document.getElementById('arCamera');
-      },
-      
-      tick: function() {
-        if (!this.el.getAttribute('visible')) return;
-        
-        const portalPos = this.el.getAttribute('position');
-        const cameraPos = this.camera.getAttribute('position');
-        
-        const distance = Math.sqrt(
-          Math.pow(portalPos.x - cameraPos.x, 2) +
-          Math.pow(portalPos.y - cameraPos.y, 2) +
-          Math.pow(portalPos.z - cameraPos.z, 2)
-        );
-        
-        // Adjust effects based on proximity
-        const intensity = Math.max(0.3, Math.min(3, this.proximityThreshold - distance));
-        
-        // Update ring effects
-        const rings = this.el.querySelectorAll('a-ring');
-        rings.forEach(ring => {
-          const material = ring.getAttribute('material');
-          ring.setAttribute('material', {
-            ...material,
-            emissiveIntensity: intensity
+        setupEventListeners: function() {
+          // Touch gesture handling
+          this.el.addEventListener('click', (event) => {
+            if (!this.portalPlaced && this.energyLevel >= 50) {
+              this.placePortal(event);
+            }
           });
-        });
+        },
         
-        // Update particle brightness
-        const particles = this.el.querySelectorAll('a-sphere');
-        particles.forEach(particle => {
-          const material = particle.getAttribute('material');
-          if (material.emissive) {
-            particle.setAttribute('material', {
+        placePortal: function(event) {
+          const camera = this.camera;
+          const cameraPos = camera.getAttribute('position');
+          const cameraRot = camera.getAttribute('rotation');
+          
+          // Calculate position in front of camera
+          const distance = 4;
+          const radians = (cameraRot.y * Math.PI) / 180;
+          
+          const portalPos = {
+            x: cameraPos.x + Math.sin(radians) * distance,
+            y: cameraPos.y + 0.5,
+            z: cameraPos.z - Math.cos(radians) * distance
+          };
+          
+          // Place and activate portal
+          this.portalGroup.setAttribute('position', `${portalPos.x} ${portalPos.y} ${portalPos.z}`);
+          this.portalGroup.setAttribute('rotation', `0 ${cameraRot.y} 0`);
+          this.portalGroup.setAttribute('visible', true);
+          
+          this.portalPlaced = true;
+          this.portalActive = true;
+          
+          // Show success message
+          this.showStatusMessage("Portal successfully materialized!", 3000);
+        },
+        
+        showStatusMessage: function(message, duration) {
+          this.statusText.textContent = message;
+          this.statusPanel.classList.remove('hidden');
+          
+          setTimeout(() => {
+            this.statusPanel.classList.add('hidden');
+          }, duration);
+        }
+      });
+      
+      // Portal Effects Component
+      AFRAME.registerComponent('portal-effects', {
+        init: function() {
+          this.proximityThreshold = 5;
+          this.camera = document.getElementById('arCamera');
+        },
+        
+        tick: function() {
+          if (!this.el.getAttribute('visible')) return;
+          
+          const portalPos = this.el.getAttribute('position');
+          const cameraPos = this.camera.getAttribute('position');
+          
+          const distance = Math.sqrt(
+            Math.pow(portalPos.x - cameraPos.x, 2) +
+            Math.pow(portalPos.y - cameraPos.y, 2) +
+            Math.pow(portalPos.z - cameraPos.z, 2)
+          );
+          
+          // Adjust effects based on proximity
+          const intensity = Math.max(0.3, Math.min(3, this.proximityThreshold - distance));
+          
+          // Update ring effects
+          const rings = this.el.querySelectorAll('a-ring');
+          rings.forEach(ring => {
+            const material = ring.getAttribute('material');
+            ring.setAttribute('material', {
               ...material,
-              emissiveIntensity: intensity * 1.5
+              emissiveIntensity: intensity
             });
+          });
+          
+          // Update particle brightness
+          const particles = this.el.querySelectorAll('a-sphere');
+          particles.forEach(particle => {
+            const material = particle.getAttribute('material');
+            if (material.emissive) {
+              particle.setAttribute('material', {
+                ...material,
+                emissiveIntensity: intensity * 1.5
+              });
+            }
+          });
+        }
+      });
+      
+      // Gesture Handler Component
+      AFRAME.registerComponent('gesture-handler', {
+        init: function() {
+          this.bindMethods();
+          this.el.addEventListener('touchstart', this.onTouchStart);
+          this.el.addEventListener('touchend', this.onTouchEnd);
+        },
+        
+        bindMethods: function() {
+          this.onTouchStart = this.onTouchStart.bind(this);
+          this.onTouchEnd = this.onTouchEnd.bind(this);
+        },
+        
+        onTouchStart: function(event) {
+          this.startTime = Date.now();
+        },
+        
+        onTouchEnd: function(event) {
+          const duration = Date.now() - this.startTime;
+          if (duration < 300) { // Quick tap
+            this.el.emit('quicktap', { originalEvent: event });
           }
-        });
-      }
-    });
-    
-    // Gesture Handler Component
-    AFRAME.registerComponent('gesture-handler', {
-      init: function() {
-        this.bindMethods();
-        this.el.addEventListener('touchstart', this.onTouchStart);
-        this.el.addEventListener('touchend', this.onTouchEnd);
-      },
+        }
+      });
       
-      bindMethods: function() {
-        this.onTouchStart = this.onTouchStart.bind(this);
-        this.onTouchEnd = this.onTouchEnd.bind(this);
-      },
-      
-      onTouchStart: function(event) {
-        this.startTime = Date.now();
-      },
-      
-      onTouchEnd: function(event) {
-        const duration = Date.now() - this.startTime;
-        if (duration < 300) { // Quick tap
-          this.el.emit('quicktap', { originalEvent: event });
+      // Global Portal Control Functions
+      window.summonPortal = function() {
+        const portalSystem = document.querySelector('a-scene').components['portal-system'];
+        if (!portalSystem) return;
+        
+        if (!portalSystem.portalPlaced && portalSystem.energyLevel >= 50) {
+          // Simulate a tap at screen center
+          const centerEvent = new CustomEvent('click', {
+            detail: { clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 }
+          });
+          document.querySelector('a-scene').dispatchEvent(centerEvent);
+        } else if (portalSystem.portalPlaced) {
+          portalSystem.showStatusMessage("Portal already active!", 2000);
+        } else {
+          portalSystem.showStatusMessage("Insufficient energy! Wait for charging...", 2000);
         }
       }
-    });
-    
-    // Global Portal Control Functions
-    window.summonPortal = function() {
-      const portalSystem = document.querySelector('a-scene').components['portal-system'];
-      if (!portalSystem) return;
       
-      if (!portalSystem.portalPlaced && portalSystem.energyLevel >= 50) {
-        // Simulate a tap at screen center
-        const centerEvent = new CustomEvent('click', {
-          detail: { clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 }
-        });
-        document.querySelector('a-scene').dispatchEvent(centerEvent);
-      } else if (portalSystem.portalPlaced) {
-        portalSystem.showStatusMessage("Portal already active!", 2000);
-      } else {
-        portalSystem.showStatusMessage("Insufficient energy! Wait for charging...", 2000);
-      }
-    }
-    
-    window.togglePortalPower = function() {
-      const portalSystem = document.querySelector('a-scene').components['portal-system'];
-      if (!portalSystem) return;
-      
-      const portalGroup = document.getElementById('portalGroup');
-      
-      if (portalSystem.portalPlaced) {
-        portalSystem.portalActive = !portalSystem.portalActive;
-        portalGroup.setAttribute('visible', portalSystem.portalActive);
+      window.togglePortalPower = function() {
+        const portalSystem = document.querySelector('a-scene').components['portal-system'];
+        if (!portalSystem) return;
         
-        const status = portalSystem.portalActive ? "Portal reactivated!" : "Portal deactivated!";
-        portalSystem.showStatusMessage(status, 2000);
-      } else {
-        portalSystem.showStatusMessage("No portal to control!", 2000);
+        const portalGroup = document.getElementById('portalGroup');
+        
+        if (portalSystem.portalPlaced) {
+          portalSystem.portalActive = !portalSystem.portalActive;
+          portalGroup.setAttribute('visible', portalSystem.portalActive);
+          
+          const status = portalSystem.portalActive ? "Portal reactivated!" : "Portal deactivated!";
+          portalSystem.showStatusMessage(status, 2000);
+        } else {
+          portalSystem.showStatusMessage("No portal to control!", 2000);
+        }
       }
-    }
-    
-    window.resetPortal = function() {
-      const portalSystem = document.querySelector('a-scene').components['portal-system'];
-      if (!portalSystem) return;
       
-      const portalGroup = document.getElementById('portalGroup');
+      window.resetPortal = function() {
+        const portalSystem = document.querySelector('a-scene').components['portal-system'];
+        if (!portalSystem) return;
+        
+        const portalGroup = document.getElementById('portalGroup');
+        
+        portalGroup.setAttribute('visible', false);
+        portalSystem.portalPlaced = false;
+        portalSystem.portalActive = false;
+        
+        portalSystem.showStatusMessage("Portal system reset!", 2000);
+      }
       
-      portalGroup.setAttribute('visible', false);
-      portalSystem.portalPlaced = false;
-      portalSystem.portalActive = false;
-      
-      portalSystem.showStatusMessage("Portal system reset!", 2000);
-    }
-    
     }); // End DOMContentLoaded
   </script>
 </body>
