@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mystic AR Portal Experience</title>
+  <meta name="description" content="Step through dimensions with AR">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+      background: #000;
+    }
+    
+    .ui-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    
+    .status-panel {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      background: rgba(0, 20, 40, 0.9);
+      border: 2px solid #00ffff;
+      border-radius: 15px;
+      padding: 20px;
+      color: #00ffff;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+      pointer-events: auto;
+    }
+    
+    .status-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px #00ffff;
+    }
+    
+    .status-text {
+      font-size: 14px;
+      opacity: 0.9;
+      line-height: 1.4;
+    }
+    
+    .portal-controls {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 15px;
+      pointer-events: auto;
+    }
+    
+    .control-btn {
+      background: rgba(0, 255, 255, 0.2);
+      border: 2px solid #00ffff;
+      color: #00ffff;
+      padding: 15px 25px;
+      border-radius: 30px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      text-shadow: 0 0 5px #00ffff;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+    }
+    
+    .control-btn:hover {
+      background: rgba(0, 255, 255, 0.4);
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+      transform: translateY(-2px);
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    #arjsDebugUIContainer {
+      display: none !important;
+    }
+    
+    .energy-indicator {
+      position: absolute;
+      top: 50%;
+      right: 20px;
+      transform: translateY(-50%);
+      width: 60px;
+      height: 200px;
+      background: linear-gradient(to top, #000, #00ffff);
+      border: 2px solid #00ffff;
+      border-radius: 30px;
+      overflow: hidden;
+      pointer-events: auto;
+    }
+    
+    .energy-level {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: linear-gradient(to top, #ff0080, #00ffff);
+      border-radius: 26px;
+      transition: height 0.5s ease;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="ui-overlay">
+    <div class="status-panel" id="statusPanel">
+      <div class="status-title">🌌 INTERDIMENSIONAL PORTAL SYSTEM</div>
+      <div class="status-text" id="statusText">Initializing quantum field generators...</div>
+    </div>
+    
+    <div class="portal-controls hidden" id="portalControls">
+      <button class="control-btn" onclick="summonPortal()">🌟 Summon Portal</button>
+      <button class="control-btn" onclick="togglePortalPower()">⚡ Toggle Power</button>
+      <button class="control-btn" onclick="resetPortal()">🔄 Reset</button>
+    </div>
+    
+    <div class="energy-indicator hidden" id="energyIndicator">
+      <div class="energy-level" id="energyLevel" style="height: 0%;"></div>
+    </div>
+  </div>
+
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; antialias: false; colorManagement: true;"
+    device-orientation-permission-ui="enabled: false"
+    portal-system
+    gesture-handler
+  >
+    <a-assets>
+      <!-- Shaders for advanced effects -->
+      <a-mixin id="energy-ring"
+        geometry="primitive: ring; radiusInner: 1.8; radiusOuter: 2.0; thetaSegments: 64"
+        material="color: #00ffff; opacity: 0.9; transparent: true; side: double"
+        animation__rotate="property: rotation; to: 0 0 360; loop: true; dur: 8000; easing: linear">
+      </a-mixin>
+      
+      <a-mixin id="particle-system"
+        geometry="primitive: sphere; radius: 0.03"
+        material="transparent: true; opacity: 0.8">
+      </a-mixin>
+    </a-assets>
+
+    <!-- Main Portal Assembly -->
+    <a-entity id="portalGroup" visible="false" portal-effects>
+      
+      <!-- Portal Frame - Outer Ring -->
+      <a-ring 
+        id="outerRing"
+        position="0 0 0"
+        radius-inner="2.2" 
+        radius-outer="2.5"
+        color="#00ffff"
+        opacity="0.8"
+        transparent="true"
+        material="side: double; emissive: #003333; emissiveIntensity: 0.5"
+        animation__spin="property: rotation; to: 0 0 360; loop: true; dur: 10000; easing: linear"
+        animation__pulse="property: scale; to: 1.05 1.05 1.05; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine">
+      </a-ring>
+      
+      <!-- Portal Frame - Middle Ring -->
+      <a-ring 
+        id="middleRing"
+        position="0 0 0.1"
+        radius-inner="1.6" 
+        radius-outer="1.9"
+        color="#ff0080"
+        opacity="0.7"
+        transparent="true"
+        material="side: double; emissive: #330022; emissiveIntensity: 0.4"
+        animation__spin="property: rotation; to: 0 0 -360; loop: true; dur: 7000; easing: linear"
+        animation__glow="property: material.emissiveIntensity; to: 1.5; dir: alternate; loop: true; dur: 1500; easing: easeInOutSine">
+      </a-ring>
+      
+      <!-- Portal Frame - Inner Ring -->
+      <a-ring 
+        id="innerRing"
+        position="0 0 0.2"
+        radius-inner="1.0" 
+        radius-outer="1.3"
+        color="#00ff88"
+        opacity="0.9"
+        transparent="true"
+        material="side: double; emissive: #002244; emissiveIntensity: 0.6"
+        animation__spin="property: rotation; to: 0 0 360; loop: true; dur: 5000; easing: linear"
+        animation__wave="property: material.emissiveIntensity; to: 2; dir: alternate; loop: true; dur: 1000; easing: easeInOutSine">
+      </a-ring>
+      
+      <!-- Portal Void (the "through" effect) -->
+      <a-circle 
+        id="portalVoid"
+        position="0 0 0.3"
+        radius="0.9"
+        color="#000011"
+        opacity="0.95"
+        transparent="true"
+        material="side: double"
+        animation__shimmer="property: material.opacity; to: 0.7; dir: alternate; loop: true; dur: 3000; easing: easeInOutSine">
+        
+        <!-- Stars inside the portal -->
+        <a-entity id="portalStars">
+          <a-sphere position="0.3 0.2 0.1" radius="0.01" color="#ffffff" material="emissive: #ffffff; emissiveIntensity: 2"
+            animation="property: material.emissiveIntensity; to: 0.5; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine"></a-sphere>
+          <a-sphere position="-0.4 -0.1 0.1" radius="0.008" color="#00ffff" material="emissive: #00ffff; emissiveIntensity: 3"
+            animation="property: material.emissiveIntensity; to: 1; dir: alternate; loop: true; dur: 1500; easing: easeInOutSine; delay: 500"></a-sphere>
+          <a-sphere position="0.1 -0.3 0.1" radius="0.012" color="#ff0080" material="emissive: #ff0080; emissiveIntensity: 2.5"
+            animation="property: material.emissiveIntensity; to: 0.8; dir: alternate; loop: true; dur: 1800; easing: easeInOutSine; delay: 1000"></a-sphere>
+          <a-sphere position="-0.2 0.4 0.1" radius="0.009" color="#00ff88" material="emissive: #00ff88; emissiveIntensity: 2"
+            animation="property: material.emissiveIntensity; to: 0.6; dir: alternate; loop: true; dur: 2200; easing: easeInOutSine; delay: 300"></a-sphere>
+        </a-entity>
+      </a-circle>
+      
+      <!-- Floating Energy Particles -->
+      <a-entity id="energyParticles">
+        <!-- Orbiting particles -->
+        <a-entity rotation="0 0 0" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear">
+          <a-sphere position="3 0 0" radius="0.04" color="#00ffff" 
+            material="emissive: #00ffff; emissiveIntensity: 2; transparent: true; opacity: 0.9"
+            animation="property: position; to: 3 0.5 0; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine"></a-sphere>
+        </a-entity>
+        
+        <a-entity rotation="0 120 0" animation="property: rotation; to: 0 480 0; loop: true; dur: 6000; easing: linear">
+          <a-sphere position="2.8 0 0" radius="0.035" color="#ff0080" 
+            material="emissive: #ff0080; emissiveIntensity: 2.5; transparent: true; opacity: 0.8"
+            animation="property: position; to: 2.8 -0.3 0; dir: alternate; loop: true; dur: 1800; easing: easeInOutSine; delay: 1000"></a-sphere>
+        </a-entity>
+        
+        <a-entity rotation="0 240 0" animation="property: rotation; to: 0 600 0; loop: true; dur: 10000; easing: linear">
+          <a-sphere position="3.2 0 0" radius="0.03" color="#00ff88" 
+            material="emissive: #00ff88; emissiveIntensity: 3; transparent: true; opacity: 0.7"
+            animation="property: position; to: 3.2 0.4 0; dir: alternate; loop: true; dur: 2400; easing: easeInOutSine; delay: 500"></a-sphere>
+        </a-entity>
+        
+        <!-- Floating random particles -->
+        <a-sphere position="4 2 1" radius="0.02" color="#ffffff" 
+          material="emissive: #ffffff; emissiveIntensity: 3; transparent: true; opacity: 0.6"
+          animation="property: position; to: -4 -2 -1; loop: true; dur: 12000; easing: easeInOutSine"
+          animation__glow="property: material.emissiveIntensity; to: 0.5; dir: alternate; loop: true; dur: 1000; easing: easeInOutSine"></a-sphere>
+        
+        <a-sphere position="-3.5 -1.8 0.5" radius="0.025" color="#00ffff" 
+          material="emissive: #00ffff; emissiveIntensity: 2; transparent: true; opacity: 0.8"
+          animation="property: position; to: 3.5 1.8 -0.5; loop: true; dur: 10000; easing: easeInOutSine; delay: 2000"
+          animation__glow="property: material.emissiveIntensity; to: 0.8; dir: alternate; loop: true; dur: 1400; easing: easeInOutSine"></a-sphere>
+      </a-entity>
+      
+      <!-- Energy Waves -->
+      <a-entity id="energyWaves">
+        <a-ring 
+          position="0 0 -0.2"
+          radius-inner="3.0" 
+          radius-outer="3.3"
+          color="#00ffff"
+          opacity="0.6"
+          transparent="true"
+          animation__expand="property: scale; from: 0.8 0.8 0.8; to: 2 2 2; loop: true; dur: 3000; easing: easeOutQuad"
+          animation__fade="property: material.opacity; from: 0.6; to: 0; loop: true; dur: 3000; easing: easeOutQuad">
+        </a-ring>
+        
+        <a-ring 
+          position="0 0 -0.2"
+          radius-inner="3.0" 
+          radius-outer="3.3"
+          color="#ff0080"
+          opacity="0.4"
+          transparent="true"
+          animation__expand="property: scale; from: 0.8 0.8 0.8; to: 2 2 2; loop: true; dur: 3000; easing: easeOutQuad; delay: 1500"
+          animation__fade="property: material.opacity; from: 0.4; to: 0; loop: true; dur: 3000; easing: easeOutQuad; delay: 1500">
+        </a-ring>
+      </a-entity>
+      
+    </a-entity>
+
+    <!-- AR Camera -->
+    <a-camera
+      id="arCamera"
+      look-controls="enabled: false"
+      wasd-controls="enabled: false"
+      arjs-device-orientation-controls="smoothingFactor: 0.1">
+    </a-camera>
+  </a-scene>
+
+  <script>
+    // Wait for A-Frame to load before registering components
+    document.addEventListener('DOMContentLoaded', function() {
+      // Ensure A-Frame is loaded
+      if (typeof AFRAME === 'undefined') {
+        console.error('A-Frame not loaded');
+        return;
+      }
+      
+      // Portal System Component
+      AFRAME.registerComponent('portal-system', {
+      init: function() {
+        this.portalActive = false;
+        this.portalPlaced = false;
+        this.energyLevel = 0;
+        this.maxEnergy = 100;
+        
+        // UI Elements
+        this.statusPanel = document.getElementById('statusPanel');
+        this.statusText = document.getElementById('statusText');
+        this.portalControls = document.getElementById('portalControls');
+        this.energyIndicator = document.getElementById('energyIndicator');
+        this.energyLevelBar = document.getElementById('energyLevel');
+        
+        // Portal Elements
+        this.portalGroup = document.getElementById('portalGroup');
+        this.camera = document.getElementById('arCamera');
+        
+        this.setupEventListeners();
+        this.startInitialization();
+      },
+      
+      startInitialization: function() {
+        let step = 0;
+        const steps = [
+          "Calibrating dimensional resonance...",
+          "Charging quantum field generators...",
+          "Establishing AR tracking matrix...",
+          "Portal system ready for deployment!"
+        ];
+        
+        const initInterval = setInterval(() => {
+          this.statusText.textContent = steps[step];
+          step++;
+          
+          if (step >= steps.length) {
+            clearInterval(initInterval);
+            setTimeout(() => {
+              this.statusPanel.classList.add('hidden');
+              this.portalControls.classList.remove('hidden');
+              this.energyIndicator.classList.remove('hidden');
+              this.startEnergyCharging();
+            }, 1500);
+          }
+        }, 1000);
+      },
+      
+      startEnergyCharging: function() {
+        const chargeInterval = setInterval(() => {
+          if (this.energyLevel < this.maxEnergy) {
+            this.energyLevel += 2;
+            this.updateEnergyDisplay();
+          } else {
+            clearInterval(chargeInterval);
+          }
+        }, 100);
+      },
+      
+      updateEnergyDisplay: function() {
+        const percentage = (this.energyLevel / this.maxEnergy) * 100;
+        this.energyLevelBar.style.height = percentage + '%';
+      },
+      
+      setupEventListeners: function() {
+        // Touch gesture handling
+        this.el.addEventListener('click', (event) => {
+          if (!this.portalPlaced && this.energyLevel >= 50) {
+            this.placePortal(event);
+          }
+        });
+      },
+      
+      placePortal: function(event) {
+        const camera = this.camera;
+        const cameraPos = camera.getAttribute('position');
+        const cameraRot = camera.getAttribute('rotation');
+        
+        // Calculate position in front of camera
+        const distance = 4;
+        const radians = (cameraRot.y * Math.PI) / 180;
+        
+        const portalPos = {
+          x: cameraPos.x + Math.sin(radians) * distance,
+          y: cameraPos.y + 0.5,
+          z: cameraPos.z - Math.cos(radians) * distance
+        };
+        
+        // Place and activate portal
+        this.portalGroup.setAttribute('position', `${portalPos.x} ${portalPos.y} ${portalPos.z}`);
+        this.portalGroup.setAttribute('rotation', `0 ${cameraRot.y} 0`);
+        this.portalGroup.setAttribute('visible', true);
+        
+        this.portalPlaced = true;
+        this.portalActive = true;
+        
+        // Show success message
+        this.showStatusMessage("Portal successfully materialized!", 3000);
+      },
+      
+      showStatusMessage: function(message, duration) {
+        this.statusText.textContent = message;
+        this.statusPanel.classList.remove('hidden');
+        
+        setTimeout(() => {
+          this.statusPanel.classList.add('hidden');
+        }, duration);
+      }
+    });
+    
+    // Portal Effects Component
+    AFRAME.registerComponent('portal-effects', {
+      init: function() {
+        this.proximityThreshold = 5;
+        this.camera = document.getElementById('arCamera');
+      },
+      
+      tick: function() {
+        if (!this.el.getAttribute('visible')) return;
+        
+        const portalPos = this.el.getAttribute('position');
+        const cameraPos = this.camera.getAttribute('position');
+        
+        const distance = Math.sqrt(
+          Math.pow(portalPos.x - cameraPos.x, 2) +
+          Math.pow(portalPos.y - cameraPos.y, 2) +
+          Math.pow(portalPos.z - cameraPos.z, 2)
+        );
+        
+        // Adjust effects based on proximity
+        const intensity = Math.max(0.3, Math.min(3, this.proximityThreshold - distance));
+        
+        // Update ring effects
+        const rings = this.el.querySelectorAll('a-ring');
+        rings.forEach(ring => {
+          const material = ring.getAttribute('material');
+          ring.setAttribute('material', {
+            ...material,
+            emissiveIntensity: intensity
+          });
+        });
+        
+        // Update particle brightness
+        const particles = this.el.querySelectorAll('a-sphere');
+        particles.forEach(particle => {
+          const material = particle.getAttribute('material');
+          if (material.emissive) {
+            particle.setAttribute('material', {
+              ...material,
+              emissiveIntensity: intensity * 1.5
+            });
+          }
+        });
+      }
+    });
+    
+    // Gesture Handler Component
+    AFRAME.registerComponent('gesture-handler', {
+      init: function() {
+        this.bindMethods();
+        this.el.addEventListener('touchstart', this.onTouchStart);
+        this.el.addEventListener('touchend', this.onTouchEnd);
+      },
+      
+      bindMethods: function() {
+        this.onTouchStart = this.onTouchStart.bind(this);
+        this.onTouchEnd = this.onTouchEnd.bind(this);
+      },
+      
+      onTouchStart: function(event) {
+        this.startTime = Date.now();
+      },
+      
+      onTouchEnd: function(event) {
+        const duration = Date.now() - this.startTime;
+        if (duration < 300) { // Quick tap
+          this.el.emit('quicktap', { originalEvent: event });
+        }
+      }
+    });
+    
+    // Global Portal Control Functions
+    window.summonPortal = function() {
+      const portalSystem = document.querySelector('a-scene').components['portal-system'];
+      if (!portalSystem) return;
+      
+      if (!portalSystem.portalPlaced && portalSystem.energyLevel >= 50) {
+        // Simulate a tap at screen center
+        const centerEvent = new CustomEvent('click', {
+          detail: { clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 }
+        });
+        document.querySelector('a-scene').dispatchEvent(centerEvent);
+      } else if (portalSystem.portalPlaced) {
+        portalSystem.showStatusMessage("Portal already active!", 2000);
+      } else {
+        portalSystem.showStatusMessage("Insufficient energy! Wait for charging...", 2000);
+      }
+    }
+    
+    window.togglePortalPower = function() {
+      const portalSystem = document.querySelector('a-scene').components['portal-system'];
+      if (!portalSystem) return;
+      
+      const portalGroup = document.getElementById('portalGroup');
+      
+      if (portalSystem.portalPlaced) {
+        portalSystem.portalActive = !portalSystem.portalActive;
+        portalGroup.setAttribute('visible', portalSystem.portalActive);
+        
+        const status = portalSystem.portalActive ? "Portal reactivated!" : "Portal deactivated!";
+        portalSystem.showStatusMessage(status, 2000);
+      } else {
+        portalSystem.showStatusMessage("No portal to control!", 2000);
+      }
+    }
+    
+    window.resetPortal = function() {
+      const portalSystem = document.querySelector('a-scene').components['portal-system'];
+      if (!portalSystem) return;
+      
+      const portalGroup = document.getElementById('portalGroup');
+      
+      portalGroup.setAttribute('visible', false);
+      portalSystem.portalPlaced = false;
+      portalSystem.portalActive = false;
+      
+      portalSystem.showStatusMessage("Portal system reset!", 2000);
+    }
+    
+    }); // End DOMContentLoaded
+  </script>
+</body>
+</html>
