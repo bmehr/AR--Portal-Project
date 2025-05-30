@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QR Code Generator - AR Portal</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+    }
+    
+    .url-input {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+    }
+    
+    .generate-btn {
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      margin-bottom: 30px;
+    }
+    
+    .generate-btn:hover {
+      transform: translateY(-2px);
+    }
+    
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 30px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 15px;
+      border: 3px dashed #667eea;
+    }
+    
+    .instructions {
+      background: #e3f2fd;
+      padding: 20px;
+      border-radius: 10px;
+      border-left: 4px solid #2196f3;
+      text-align: left;
+      margin-top: 20px;
+    }
+    
+    .instructions h3 {
+      margin-top: 0;
+      color: #1976d2;
+    }
+    
+    .instructions ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+    
+    .instructions li {
+      margin-bottom: 8px;
+      color: #333;
+    }
+    
+    .demo-url-box {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      margin-bottom: 20px;
+      font-family: monospace;
+      word-break: break-all;
+      color: #666;
+    }
+    
+    .warning {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      color: #856404;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌟 AR Portal QR Code</h1>
+    <p class="subtitle">Generate a QR code to access your AR experience on mobile</p>
+    
+    <input type="url" 
+           class="url-input" 
+           id="urlInput" 
+           placeholder="Enter the URL of your AR Portal experience"
+           value="">
+    
+    <br>
+    <button class="generate-btn" onclick="generateQR()">Generate QR Code</button>
+    
+    <div id="qrcode"></div>
+    
+    <div class="demo-url-box">
+      <strong>Example URL:</strong><br>
+      https://your-hosting-site.com/ar-portal.html
+    </div>
+    
+    <div class="instructions">
+      <h3>📱 How to Use:</h3>
+      <ol>
+        <li>Host your AR Portal HTML file on a web server (GitHub Pages, Netlify, etc.)</li>
+        <li>Copy the HTTPS URL and paste it above</li>
+        <li>Click "Generate QR Code"</li>
+        <li>Scan the QR code with your Android phone's camera</li>
+        <li>Allow camera permissions when prompted</li>
+        <li>Tap the screen to place your magical portal!</li>
+      </ol>
+    </div>
+    
+    <div class="warning">
+      <strong>⚠️ Important:</strong> Your AR experience must be served over HTTPS to work on mobile devices. Free hosting options like GitHub Pages, Netlify, or Vercel automatically provide HTTPS.
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+  <script>
+    function generateQR() {
+      const url = document.getElementById('urlInput').value;
+      const qrContainer = document.getElementById('qrcode');
+      
+      if (!url) {
+        alert('Please enter a URL for your AR experience');
+        return;
+      }
+      
+      if (!url.startsWith('https://')) {
+        alert('URL must start with https:// to work on mobile devices');
+        return;
+      }
+      
+      // Clear previous QR code
+      qrContainer.innerHTML = '';
+      
+      // Generate new QR code
+      QRCode.toCanvas(qrContainer, url, {
+        width: 256,
+        height: 256,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        },
+        margin: 2,
+        errorCorrectionLevel: 'M'
+      }, function (error) {
+        if (error) {
+          console.error(error);
+          qrContainer.innerHTML = '<p style="color: red;">Error generating QR code</p>';
+        } else {
+          console.log('QR code generated successfully!');
+          
+          // Add download button
+          const downloadBtn = document.createElement('button');
+          downloadBtn.textContent = '💾 Download QR Code';
+          downloadBtn.style.marginTop = '15px';
+          downloadBtn.style.padding = '10px 20px';
+          downloadBtn.style.backgroundColor = '#4CAF50';
+          downloadBtn.style.color = 'white';
+          downloadBtn.style.border = 'none';
+          downloadBtn.style.borderRadius = '5px';
+          downloadBtn.style.cursor = 'pointer';
+          
+          downloadBtn.onclick = function() {
+            const canvas = qrContainer.querySelector('canvas');
+            const link = document.createElement('a');
+            link.download = 'ar-portal-qr-code.png';
+            link.href = canvas.toDataURL();
+            link.click();
+          };
+          
+          qrContainer.appendChild(document.createElement('br'));
+          qrContainer.appendChild(downloadBtn);
+        }
+      });
+    }
+    
+    // Auto-generate QR for demo purposes with a placeholder
+    window.onload = function() {
+      // You can uncomment this and add your actual URL
+      // document.getElementById('urlInput').value = 'https://your-github-username.github.io/ar-portal/index.html';
+      // generateQR();
+    };
+  </script>
+</body>
+</html>
